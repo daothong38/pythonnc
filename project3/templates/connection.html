@@ -1,1 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết nối với Database</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .connection-form {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        #message {
+            margin-top: 15px;
+            padding: 10px;
+            text-align: center;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-form">
+        <h2>Kết nối Database</h2>
+        <div class="form-group">
+            <label for="dbname">Tên Database</label>
+            <input type="text" id="dbname" placeholder="Enter database name" value="Project2">
+        </div>
+        <div class="form-group">
+            <label for="user">User</label>
+            <input type="text" id="user" placeholder="Enter username" value="postgres">
+        </div>
+        <div class="form-group">
+            <label for="password">Mật khẩu</label>
+            <input type="password" id="password" placeholder="Enter password">
+        </div>
+        <div class="form-group">
+            <label for="host">Host</label>
+            <input type="text" id="host" placeholder="Enter host" value="localhost">
+        </div>
+        <div class="form-group">
+            <label for="port">Port</label>
+            <input type="text" id="port" placeholder="Enter port" value="5432">
+        </div>
+        <button class="btn" onclick="testConnection()">Kết nối</button>
+        <div id="message"></div>
+    </div>
 
+    <script>
+        function testConnection() {
+            const dbDetails = {
+                dbname: document.getElementById('dbname').value,
+                user: document.getElementById('user').value,
+                password: document.getElementById('password').value,
+                host: document.getElementById('host').value,
+                port: document.getElementById('port').value
+            };
+
+            // Validate inputs
+            for (let key in dbDetails) {
+                if (!dbDetails[key]) {
+                    showMessage(`Vui lòng nhập ${key.replace(/([A-Z])/g, ' $1').toLowerCase()}`, 'error');
+                    return;
+                }
+            }
+
+            // Send connection details to backend
+            fetch('/test_connection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dbDetails)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    // Store connection details in session or local storage
+                    localStorage.setItem('dbDetails', JSON.stringify(dbDetails));
+                    
+                    // Redirect to management page
+                    window.location.href = '/management';
+                } else {
+                    showMessage(`Kết nối lỗi: ${result.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage(`Error: ${error}`, 'error');
+            });
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = message;
+            messageDiv.className = type;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Danh Sách Sinh Viên</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-right: 10px;
+        }
+        .btn-delete {
+            background-color: #f44336;
+        }
+        .btn:hover {
+            opacity: 0.8;
+        }
+        #message {
+            margin-top: 10px;
+            padding: 10px;
+            display: none;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+        .disconnect-btn {
+            background-color: #f44336;
+            float: right;
+        }
+        .delete-section {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Quản Lý Danh Sách Sinh Viên</h1>
+    <button class="btn disconnect-btn" onclick="disconnectDatabase()">Ngắt Kết Nối</button>
+
+    <div class="form-group">
+        <label for="tableName">Tên Bảng:</label>
+        <input type="text" id="tableName" placeholder="Nhập tên bảng">
+        <button class="btn" onclick="loadData()">Tải Dữ Liệu</button>
+    </div>
+
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>Mã Số SV</th>
+                <th>Họ Tên SV</th>
+                <th>Giới Tính</th>
+                <th>Lớp</th>
+            </tr>
+        </thead>
+        <tbody id="dataBody">
+            <!-- Data will be dynamically inserted here -->
+        </tbody>
+    </table>
+
+    <div>
+        <h2>Thêm Dữ Liệu</h2>
+        <div class="form-group">
+            <label for="masosv">Mã Số SV:</label>
+            <input type="text" id="masosv" placeholder="Nhập mã số sinh viên">
+        </div>
+        <div class="form-group">
+            <label for="hotensv">Họ Tên SV:</label>
+            <input type="text" id="hotensv" placeholder="Nhập họ tên sinh viên">
+        </div>
+        <div class="form-group">
+            <label for="gioitinh">Giới Tính:</label>
+            <input type="text" id="gioitinh" placeholder="Nhập giới tính">
+        </div>
+        <div class="form-group">
+            <label for="lop">Lớp:</label>
+            <input type="text" id="lop" placeholder="Nhập lớp">
+        </div>
+        <button class="btn" onclick="insertData()">Thêm Sinh Viên</button>
+    </div>
+
+    <div class="delete-section">
+        <h2>Xóa Dữ Liệu</h2>
+        <div class="form-group">
+            <label for="deleteTableName">Tên Bảng:</label>
+            <input type="text" id="deleteTableName" placeholder="Nhập tên bảng">
+        </div>
+        <div class="form-group">
+            <label for="deleteMasosv">Mã Số SV:</label>
+            <input type="text" id="deleteMasosv" placeholder="Nhập mã số sinh viên để xóa">
+        </div>
+        <button class="btn btn-delete" onclick="deleteData()">Xóa Sinh Viên</button>
+    </div>
+
+    <div id="message"></div>
+
+    <script>
+        function loadData() {
+            const tableName = document.getElementById('tableName').value;
+            
+            if (!tableName) {
+                showMessage('Vui lòng nhập tên bảng', 'error');
+                return;
+            }
+
+            fetch('/load_data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ table_name: tableName })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    const dataBody = document.getElementById('dataBody');
+                    dataBody.innerHTML = ''; // Clear existing rows
+                    result.data.forEach(row => {
+                        const tr = document.createElement('tr');
+                        row.forEach(cell => {
+                            const td = document.createElement('td');
+                            td.textContent = cell;
+                            tr.appendChild(td);
+                        });
+                        dataBody.appendChild(tr);
+                    });
+                    showMessage('Dữ liệu đã được tải thành công!', 'success');
+                } else {
+                    showMessage(result.message, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Lỗi kết nối: ' + error, 'error');
+            });
+        }
+
+        function insertData() {
+            const tableName = document.getElementById('tableName').value;
+            const masosv = document.getElementById('masosv').value;
+            const hotensv = document.getElementById('hotensv').value;
+            const gioitinh = document.getElementById('gioitinh').value;
+            const lop = document.getElementById('lop').value;
+
+            if (!tableName || !masosv || !hotensv || !gioitinh || !lop) {
+                showMessage('Vui lòng điền đầy đủ thông tin', 'error');
+                return;
+            }
+
+            fetch('/insert_data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    table_name: tableName,
+                    masosv: masosv,
+                    hotensv: hotensv,
+                    gioitinh: gioitinh,
+                    lop: lop
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    showMessage(result.message, 'success');
+                    // Clear input fields after successful insertion
+                    document.getElementById('masosv').value = '';
+                    document.getElementById('hotensv').value = '';
+                    document.getElementById('gioitinh').value = '';
+                    document.getElementById('lop').value = '';
+                    
+                    // Reload data if table name matches
+                    if (document.getElementById('tableName').value) {
+                        loadData();
+                    }
+                } else {
+                    showMessage(result.message, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Lỗi kết nối: ' + error, 'error');
+            });
+        }
+
+        function deleteData() {
+            const tableName = document.getElementById('deleteTableName').value;
+            const masosv = document.getElementById('deleteMasosv').value;
+
+            if (!tableName || !masosv) {
+                showMessage('Vui lòng điền đầy đủ thông tin', 'error');
+                return;
+            }
+
+            // Confirm deletion
+            if (!confirm(`Bạn có chắc chắn muốn xóa sinh viên có mã số ${masosv} không?`)) {
+                return;
+            }
+
+            fetch('/delete_data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    table_name: tableName,
+                    masosv: masosv
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    showMessage(result.message, 'success');
+                    
+                    // Clear delete input fields
+                    document.getElementById('deleteMasosv').value = '';
+                    
+                    // Reload data if table name matches
+                    if (document.getElementById('tableName').value === tableName) {
+                        loadData();
+                    }
+                } else {
+                    showMessage(result.message, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Lỗi kết nối: ' + error, 'error');
+            });
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = message;
+            messageDiv.className = type;
+            messageDiv.style.display = 'block';
+
+            // Hide message after 3 seconds
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function disconnectDatabase() {
+            // Clear any stored connection details
+            localStorage.removeItem('dbDetails');
+            
+            // Redirect back to connection page
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
