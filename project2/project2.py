@@ -93,7 +93,12 @@ class DatabaseApp:
         ttk.Label(insert_frame, text="Lớp:").grid(row=3, column=0, padx=5, pady=5)
         ttk.Entry(insert_frame, textvariable=self.class_name).grid(row=3, column=1, padx=5, pady=5)
 
-        ttk.Button(insert_frame, text="Insert Data", command=self.insert_data).grid(row=4, columnspan=2, pady=10)
+        # Buttons for Insert and Delete
+        button_frame = ttk.Frame(frame)
+        button_frame.pack(pady=10)
+
+        ttk.Button(button_frame, text="Thêm Sinh Viên", command=self.insert_data).grid(row=0, column=0, padx=5)
+        ttk.Button(button_frame, text="Xóa Sinh Viên", command=self.delete_data).grid(row=0, column=1, padx=5)
 
     def connect_db(self):
         try:
@@ -132,8 +137,38 @@ class DatabaseApp:
             self.cur.execute(insert_query, data_to_insert)
             self.conn.commit()
             self.load_data()
+            messagebox.showinfo("Success", "Đã thêm sinh viên thành công!")
         except Exception as e:
             messagebox.showerror("Error", f"Lỗi thêm dữ liệu: {e}")
+
+    def delete_data(self):
+        try:
+            # Get the selected item from the Treeview
+            selected_item = self.tree.selection()
+            
+            if not selected_item:
+                messagebox.showwarning("Cảnh báo", "Vui lòng chọn sinh viên để xóa!")
+                return
+
+            # Get the student ID from the selected row and convert to string
+            student_id = str(self.tree.item(selected_item)['values'][0])
+
+            # Confirm deletion
+            confirm = messagebox.askyesno("Xác nhận", f"Bạn có chắc muốn xóa sinh viên có mã số {student_id} không?")
+            
+            if confirm:
+                # Prepare and execute delete query
+                delete_query = sql.SQL("DELETE FROM {} WHERE masosv = %s").format(sql.Identifier(self.table_name.get()))
+                self.cur.execute(delete_query, (student_id,))
+                self.conn.commit()
+                
+                # Reload data and show success message
+                self.load_data()
+                messagebox.showinfo("Success", f"Đã xóa sinh viên có mã số {student_id} thành công!")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Lỗi xóa dữ liệu: {e}")
+            print(e)
 
 if __name__ == "__main__":
     root = tk.Tk()
